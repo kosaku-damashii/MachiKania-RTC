@@ -12,8 +12,8 @@ REM                   : GND
 USECLASS RTC
 R=NEW(RTC)
 
-R.INIT(20,2,23,13,4,0)
-R.WR()
+REM R.INIT(20,3,1,22,35,0)
+IF R.INIT() < 0 THEN PRINT "Please charge Super capacitor":END
 
 WAIT 60
 
@@ -43,7 +43,10 @@ METHOD DOWNUM  REM Day of week number (SUN=1...SUT=7)
   VAR Y,M
   IF ((MONTH = 1) OR (MONTH = 2)) THEN
     Y=(YEAR+2000)-1
-    M=MONTH+12
+    M=MONTH+12    
+  ELSE
+    Y=YEAR+2000
+    M=MONTH    
   ENDIF
 RETURN (Y+Y/4-Y/100+Y/400+(13*M+8)/5+DAY)%7+1
 
@@ -117,33 +120,7 @@ METHOD RDDATA
 RETURN B
 
 METHOD INIT
-  VAR A
-
-  IF ARGS(0)=0 THEN
-    YEAR=20
-    MONTH=1
-    DAY=1
-    HOUR=0
-    MIN=0
-    SEC=0
-    DOW=3
-  ELSEIF ARGS(0)=6 THEN
-    YEAR=ARGS(1)
-    MONTH=ARGS(2)
-    DAY=ARGS(3)
-    HOUR=ARGS(4)
-    MIN=ARGS(5)
-    SEC=ARGS(6)
-    DOW=RTC::DOWNUM()
-  ELSE
-    YEAR=ARGS(1)
-    MONTH=ARGS(2)
-    DAY=ARGS(3)
-    HOUR=ARGS(4)
-    MIN=ARGS(5)
-    SEC=ARGS(6)
-    DOW=ARGS(7)
-  ENDIF
+  VAR A,R
 
   DO
     CALL RTC::MODERD()
@@ -152,7 +129,30 @@ METHOD INIT
     CALL RTC::RDDATA(44)  REM Idle reading
     CALL RTC::CLOSE()
   LOOP WHILE A=1
-RETURN
+
+  IF ARGS(0)=6 THEN
+    YEAR=ARGS(1)
+    MONTH=ARGS(2)
+    DAY=ARGS(3)
+    HOUR=ARGS(4)
+    MIN=ARGS(5)
+    SEC=ARGS(6)
+    DOW=RTC::DOWNUM()
+    CALL RTC::WR()
+  ELSEIF ARGS(0)=7 THEN
+    YEAR=ARGS(1)
+    MONTH=ARGS(2)
+    DAY=ARGS(3)
+    HOUR=ARGS(4)
+    MIN=ARGS(5)
+    SEC=ARGS(6)
+    DOW=ARGS(7)
+    CALL RTC::WR()
+  ELSE
+    CALL RTC::RD()
+  ENDIF
+  IF YEAR<20 THEN R=-1 ELSE R=1   REM R=-1:Super capacitor maybe discharged.
+RETURN R
 
 METHOD WR
   CALL RTC::MODEWR()
