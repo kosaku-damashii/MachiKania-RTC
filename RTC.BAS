@@ -2,17 +2,17 @@ REM RTC.BAS
 REM
 REM MachiKania type M : RTC-4543SA
 REM ------------------+------------------------
-REM                14 : B14 WR
-REM                15 : B15 CLK
+REM           14(B14) : CE
+REM           15(B15) : WR
 REM                   : 3.3V
-REM                16 : E6  CE   (Need pull up)
-REM                17 : E5  DATA (Need pull up)
+REM           16(E5 ) : CLK
+REM           17(E6 ) : DATA
 REM                   : GND
 
 USECLASS RTC
 R=NEW(RTC)
 
-R.INIT(20,2,18,22,50,0)
+R.INIT(20,2,23,13,4,0)
 R.WR()
 
 WAIT 60
@@ -57,34 +57,34 @@ METHOD DOWTXT  REM Day of week text
   ENDIF
 
 METHOD CLOSE
-  OUT 16,0    REM E6  CE
-  OUT 14,0    REM B14 WR
-  OUT 15,0    REM B15 CLK
-  OUT 17,0    REM E5  DATA
+  OUT 14,0    REM B14 CE
+  OUT 15,0    REM B15 WR
+  OUT 16,0    REM E5  CLK
+  OUT 17,0    REM E6  DATA
 RETURN
 
 METHOD MODEWR
-  OUT 14,1    REM B14 WR
-  OUT 16,1    REM E6  CE
+  OUT 15,1    REM B15 WR
+  OUT 14,1    REM B14 CE
 RETURN
 
 METHOD MODERD
-  OUT 14,0    REM B14 WR
-  OUT 16,1    REM E6  CE
+  OUT 15,0    REM B15 WR
+  OUT 14,1    REM B14 CE
 RETURN
 
 METHOD CLK
-  OUT 15,1    REM B15 CLK
+  OUT 16,1    REM E5  CLK
   CALL RTC::WAITu(500)
-  OUT 15,0    REM B15 CLK
+  OUT 16,0    REM E5  CLK
   CALL RTC::WAITu(500)
 RETURN
 
 METHOD WRBIT
   IF (ARGS(1) AND 1) = 1 THEN
-    OUT 17,1   REM E5  DATA
+    OUT 17,1   REM E6  DATA
   ELSE
-    OUT 17,0   REM E5  DATA
+    OUT 17,0   REM E6  DATA
   ENDIF
   CALL RTC::CLK()
 RETURN
