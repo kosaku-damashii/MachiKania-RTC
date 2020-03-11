@@ -1,12 +1,13 @@
 REM RTC.BAS
-REM RTC-4543SA
 REM
-REM 14 : B14 WR
-REM 15 : B15 CLK
-REM    : 3.3V
-REM 16 : E5  DATA
-REM 17 : E6  CE
-REM    : GND
+REM MachiKania type M : RTC-4543SA
+REM ------------------+------------------------
+REM                14 : B14 WR
+REM                15 : B15 CLK
+REM                   : 3.3V
+REM                16 : E6  CE   (Need pull up)
+REM                17 : E5  DATA (Need pull up)
+REM                   : GND
 
 USECLASS RTC
 R=NEW(RTC)
@@ -18,8 +19,8 @@ WAIT 60
 
 WHILE 1
   R.RD()
-  CLS
-  CURSOR 0,0
+REM  CLS
+REM  CURSOR 0,0
   PRINT "20"+DEC$(R.YEAR)+" "+DEC$(R.MONTH)+"/"+DEC$(R.DAY)+" ";
   PRINT "("+R.DOWTXT$()+")"+" ";
   PRINT DEC$(R.HOUR)+":"+DEC$(R.MIN)+":"+DEC$(R.SEC)
@@ -56,20 +57,20 @@ METHOD DOWTXT  REM Day of week text
   ENDIF
 
 METHOD CLOSE
-  OUT 17,0    REM E6  CE
+  OUT 16,0    REM E6  CE
   OUT 14,0    REM B14 WR
   OUT 15,0    REM B15 CLK
-  OUT 16,0    REM E5  DATA
+  OUT 17,0    REM E5  DATA
 RETURN
 
 METHOD MODEWR
   OUT 14,1    REM B14 WR
-  OUT 17,1    REM E6  CE
+  OUT 16,1    REM E6  CE
 RETURN
 
 METHOD MODERD
   OUT 14,0    REM B14 WR
-  OUT 17,1    REM E6  CE
+  OUT 16,1    REM E6  CE
 RETURN
 
 METHOD CLK
@@ -81,16 +82,16 @@ RETURN
 
 METHOD WRBIT
   IF (ARGS(1) AND 1) = 1 THEN
-    OUT 16,1   REM E5  DATA
+    OUT 17,1   REM E5  DATA
   ELSE
-    OUT 16,0   REM E5  DATA
+    OUT 17,0   REM E5  DATA
   ENDIF
   CALL RTC::CLK()
 RETURN
 
 METHOD RDBIT
   CALL RTC::CLK()
-RETURN IN(16) AND 1 
+RETURN IN(17) AND 1 
 
 METHOD WRDATA
   VAR A,B,I
@@ -185,6 +186,7 @@ METHOD RD
   B=RTC::RDDATA(3)
   SEC=A + (B * 10)
   A=RTC::RDDATA(1)   REM FDT bit
+  PRINT "FDT:"+DEC$(A)
 
   A=RTC::RDDATA(4)
   B=RTC::RDDATA(3)
