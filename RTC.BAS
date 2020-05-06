@@ -1,19 +1,28 @@
 REM RTC.BAS
 REM
-REM MachiKania type M : RTC-4543SA
-REM ------------------+------------------------
-REM           14(B14) : CE
-REM           15(B15) : WR
-REM                   : 3.3V
-REM           16(E5 ) : CLK
-REM           17(E6 ) : DATA
-REM                   : GND
+REM Default I/O ports setting is following.
+REM   MachiKania type M : RTC-4543SA
+REM   ------------------+------------------------
+REM             14(B14) : CE
+REM             15(B15) : WR
+REM                     : 3.3V
+REM             16(E5 ) : CLK
+REM             17(E6 ) : DATA
+REM                     : GND
+REM If you need to use I/O port except above default I/O ports,
+REM please set I/O ports with "SETIO" method before execute "INIT" method, 
+REM   SETIO(CE, WR, CLK, DATA)
+
 
 USECLASS RTC
 R=NEW(RTC)
 
-REM R.INIT(20,3,1,22,35,0)
-IF R.INIT() < 0 THEN PRINT "Please charge Super capacitor":END
+REM R.SETIO(14,15,16,18)  REM SETIO(CE, WR, CLK, DATA)
+
+IF R.INIT(20,5,6,15,9,0) < 0 THEN
+REM IF R.INIT() < 0 THEN
+  PRINT "Please charge Super capacitor and set date and time with \"INIT\" method.":END
+ENDIF
 
 WAIT 60
 
@@ -32,11 +41,16 @@ REM === CLASS "RTC" ===
 OPTION CLASSCODE
 
 FIELD PUBLIC YEAR,MONTH,DAY,HOUR,MIN,SEC,DOW
+FIELD PRIVATE pCE,pWR,pCLK,pDATA
 
 METHOD WAITu
-  USETIMER ARGS(1)
-  WHILE TIMER() > 0
-  WEND
+  VAR I
+  FOR I=ARGS(1)/15 TO 1 STEP -1: NEXT
+
+  REM Please replace with follwing code if you want to interrupt timer version. 
+  REM USETIMER ARGS(1)
+  REM WHILE TIMER() = 0
+  REM WEND
 RETURN
 
 METHOD DOWNUM  REM Day of week number (SUN=1...SUT=7)
@@ -60,41 +74,41 @@ METHOD DOWTXT  REM Day of week text
   ENDIF
 
 METHOD CLOSE
-  OUT 14,0    REM B14 CE
-  OUT 15,0    REM B15 WR
-  OUT 16,0    REM E5  CLK
-  OUT 17,0    REM E6  DATA
+  OUT pCE,0
+  OUT pWR,0
+  OUT pCLK,0
+  OUT pDATA,0
 RETURN
 
 METHOD MODEWR
-  OUT 15,1    REM B15 WR
-  OUT 14,1    REM B14 CE
+  OUT pWR,1
+  OUT pCE,1
 RETURN
 
 METHOD MODERD
-  OUT 15,0    REM B15 WR
-  OUT 14,1    REM B14 CE
+  OUT pWR,0
+  OUT pCE,1
 RETURN
 
 METHOD CLK
-  OUT 16,1    REM E5  CLK
-  CALL RTC::WAITu(500)
-  OUT 16,0    REM E5  CLK
-  CALL RTC::WAITu(500)
+  OUT pCLK,1
+  CALL RTC::WAITu(750)
+  OUT pCLK,0
+  CALL RTC::WAITu(750)
 RETURN
 
 METHOD WRBIT
   IF (ARGS(1) AND 1) = 1 THEN
-    OUT 17,1   REM E6  DATA
+    OUT pDATA,1
   ELSE
-    OUT 17,0   REM E6  DATA
+    OUT pDATA,0
   ENDIF
   CALL RTC::CLK()
 RETURN
 
 METHOD RDBIT
   CALL RTC::CLK()
-RETURN IN(17) AND 1 
+RETURN IN(pDATA) AND 1
 
 METHOD WRDATA
   VAR A,B,I
@@ -119,8 +133,24 @@ METHOD RDDATA
   NEXT
 RETURN B
 
+REM Set I/O port before execute INIT(), if you need to use I/O port except default ports.
+METHOD SETIO
+  pCE=ARGS(1)
+  pWR=ARGS(2)
+  pCLK=ARGS(3)
+  pDATA=ARGS(4)
+RETURN
+
 METHOD INIT
   VAR A,R
+
+  REM Set default ports, if user did not change default port's definition.
+  IF pCE=pWR THEN
+    pCE=14
+    pWR=15
+    pCLK=16
+    pDATA=17
+  ENDIF
 
   DO
     CALL RTC::MODERD()
