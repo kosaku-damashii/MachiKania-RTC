@@ -1,35 +1,30 @@
 REM RTC.BAS
 REM
-REM Default I/O ports setting is following.
+REM This sample code use the following I/O ports settings.
 REM   MachiKania type M : RTC-4543SA
 REM   ------------------+------------------------
 REM             14(B14) : CE
 REM             15(B15) : WR
 REM                     : 3.3V
-REM             16(E5 ) : CLK
-REM             17(E6 ) : DATA
+REM             16(E5 ) : DATA
+REM             18(E7 ) : CLK
 REM                     : GND
-REM If you need to use I/O port except above default I/O ports,
-REM please set I/O ports with "SETIO" method before execute "INIT" method, 
-REM   SETIO(CE, WR, CLK, DATA)
+REM If you need to use another I / O ports, please set them 
+REM when you create a new object with the "NEW" function
 
-
+REM === Sample Code ===
 USECLASS RTC
-R=NEW(RTC)
 
-REM R.SETIO(14,15,16,18)  REM SETIO(CE, WR, CLK, DATA)
+REM CE=14, WR=15, DATA=16, CLK=18)
+R=NEW(RTC,14,15,16,18)
 
-IF R.INIT(20,5,6,15,9,0) < 0 THEN
-REM IF R.INIT() < 0 THEN
-  PRINT "Please charge Super capacitor and set date and time with \"INIT\" method.":END
-ENDIF
+REM 2020 Nov./21 16:24:00
+R.SETTM(20,11,21,17,47,30)
 
 WAIT 60
 
 WHILE 1
   R.RD()
-REM   CLS
-REM  CURSOR 0,0
   PRINT "20"+DEC$(R.YEAR)+" "+DEC$(R.MONTH)+"/"+DEC$(R.DAY)+" ";
   PRINT "("+R.DOWTXT$()+")"+" ";
   PRINT DEC$(R.HOUR)+":"+DEC$(R.MIN)+":"+DEC$(R.SEC)
@@ -76,8 +71,8 @@ METHOD DOWTXT  REM Day of week text
 METHOD CLOSE
   OUT pCE,0
   OUT pWR,0
-  OUT pCLK,0
   OUT pDATA,0
+  OUT pCLK,0
 RETURN
 
 METHOD MODEWR
@@ -133,32 +128,17 @@ METHOD RDDATA
   NEXT
 RETURN B
 
-REM Set I/O port before execute INIT(), if you need to use I/O port except default ports.
+REM Set I/O port
 METHOD SETIO
   pCE=ARGS(1)
   pWR=ARGS(2)
-  pCLK=ARGS(3)
-  pDATA=ARGS(4)
+  pDATA=ARGS(3)
+  pCLK=ARGS(4)
 RETURN
 
-METHOD INIT
-  VAR A,R
-
-  REM Set default ports, if user did not change default port's definition.
-  IF pCE=pWR THEN
-    pCE=14
-    pWR=15
-    pCLK=16
-    pDATA=17
-  ENDIF
-
-  DO
-    CALL RTC::MODERD()
-    CALL RTC::RDDATA(7)
-    A=RTC::RDDATA(1)      REM FDT bit
-    CALL RTC::RDDATA(44)  REM Idle reading
-    CALL RTC::CLOSE()
-  LOOP WHILE A=1
+REM Set Time
+METHOD SETTM
+  VAR R
 
   IF ARGS(0)=6 THEN
     YEAR=ARGS(1)
@@ -169,20 +149,32 @@ METHOD INIT
     SEC=ARGS(6)
     DOW=RTC::DOWNUM()
     CALL RTC::WR()
-  ELSEIF ARGS(0)=7 THEN
-    YEAR=ARGS(1)
-    MONTH=ARGS(2)
-    DAY=ARGS(3)
-    HOUR=ARGS(4)
-    MIN=ARGS(5)
-    SEC=ARGS(6)
-    DOW=ARGS(7)
-    CALL RTC::WR()
   ELSE
     CALL RTC::RD()
   ENDIF
   IF YEAR<20 THEN R=-1 ELSE R=1   REM R=-1:Super capacitor maybe discharged.
 RETURN R
+
+METHOD INIT
+  VAR A,R
+
+  CALL RTC::SETIO(ARGS(1),ARGS(2),ARGS(3),ARGS(4))
+
+  DO
+    CALL RTC::MODERD()
+    CALL RTC::RDDATA(7)
+    A=RTC::RDDATA(1)      REM FDT bit
+    CALL RTC::RDDATA(44)  REM Idle reading
+    CALL RTC::CLOSE()
+  LOOP WHILE A=1
+
+  CALL RTC::RD()
+  IF YEAR<20 THEN R=-1 ELSE R=1   REM R=-1:Super capacitor maybe discharged.
+
+  IF R < 0 THEN
+    PRINT "Please charge Super capacitor and set date and time with \"SETTM\" method.":END
+  ENDIF
+RETURN
 
 METHOD WR
   CALL RTC::MODEWR()
