@@ -18,8 +18,12 @@ USECLASS RTC
 REM CE=14, WR=15, DATA=16, CLK=18)
 R=NEW(RTC,14,15,16,18)
 
-REM 2020 Nov./21 17:47:30
-R.SETTM(20,11,21,17,47,30)
+IF R.YEAR < 20 THEN
+  PRINT "Super capacitor maybe discharged."
+ENDIF
+
+REM 2021 Jan./31 12:05:30
+R.SETTM(21,1,31,12,05,30)
 
 WAIT 60
 
@@ -156,7 +160,7 @@ METHOD SETTM
 RETURN R
 
 METHOD INIT
-  VAR A,R
+  VAR A
 
   CALL RTC::SETIO(ARGS(1),ARGS(2),ARGS(3),ARGS(4))
 
@@ -169,11 +173,6 @@ METHOD INIT
   LOOP WHILE A=1
 
   CALL RTC::RD()
-  IF YEAR<20 THEN R=-1 ELSE R=1   REM R=-1:Super capacitor maybe discharged.
-
-  IF R < 0 THEN
-    PRINT "Please charge Super capacitor and set date and time with \"SETTM\" method.":END
-  ENDIF
 RETURN
 
 METHOD WR
